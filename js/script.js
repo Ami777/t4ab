@@ -1,6 +1,7 @@
 var timeForABreakApp = angular.module('timeForABreakApp', ['ngCookies']);
 
 timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $cookies) {
+    //List of exercises - excersise1st is 1st always, excersiseLast is last always, excersises is array of random exercises.
     $scope.excersise1st = 'While taking a deep breath look at the tip of your nose. When breathing out change the focus to the most distant point you can. Repeat 10 times.';
     $scope.excersiseLast = 'Go talk with someone. Now your eyes are OK, your body is OK, so don`t let your social-skills be affected by computer work. Go and talk with someone real face-to-face for the reaming time.';
     $scope.excersises = [
@@ -14,13 +15,14 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         'While standing up reach up as high as you can (the fingers can be interlocked). In that position lean left and right couple of times (5 times each side).',
         'Squat. Spread your legs standing up and straighten your arms in front of you. Start crouching down watching your heels not to break off the ground. Keep your knees within the line of your feet. Crounch until your thighs create a right angle with the floor.'
     ];
+    $scope.TIME_WORK = 50; //50 //Time in minutes for work
+    $scope.TIME_BREAK = 10; //10 //Time in minutes for break
+    $scope.TIME_TICK_EACH = 10; //10 //Time in minutes for tick
+
     $scope.excersiseIdx = $scope.excersises.length; //Let it overflow at the beginning so it will shuffle
     $scope.excersisesSelected = [];
     $scope.excersiseVisible = 0;
 
-    $scope.TIME_WORK = 50; //50 //Time in minutes for work
-    $scope.TIME_BREAK = 10; //10 //Time in minutes for break
-    $scope.TIME_TICK_EACH = 10; //10 //Time in minutes for tick
     $scope.timerCircleColors = { //Colors of timer circle
         'work':[
             '#93D6B0',
@@ -39,6 +41,7 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
     $scope.nextBreak; //This will hold Date of next break time
     $scope.timerCircle; //This will hold Circles instance
 
+    //Options array
     $scope.options = [
         {
             'typ':'bool',
@@ -73,6 +76,11 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
     $scope.currMode = 'work'; //Modes: 'work', 'pause', 'nap', 'break'
     $scope.visibleNote = '';
 
+    /**
+     * Shuffle an array (<http://bost.ocks.org/mike/shuffle/>)
+     * @param array
+     * @returns array Shuffled
+     */
     $scope.shuffle = function(array) {
         //<http://bost.ocks.org/mike/shuffle/>
         var m = array.length, t, i;
@@ -92,26 +100,49 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         return array;
     }
 
+    /**
+     * Stop an alarm action.
+     */
     $scope.stopAlarm = function(){
         soundManager.stop('alarm');
     }
 
+    /**
+     * Is exercise visible action.
+     * @param idx Number of exercise.
+     * @returns {boolean}
+     */
     $scope.isExerciseVisible = function(idx){
         return idx==$scope.excersiseVisible;
     }
 
+    /**
+     * Set next/prev visible exercise action.
+     * @param move -1 (left)/+1 (right)
+     */
     $scope.setVisibleExercise = function(move){
         $scope.excersiseVisible=$scope.excersiseVisible+move;
     }
 
+    /**
+     * Is next/prev exercise button visible action.
+     * @param move -1 (left)/+1 (right)
+     */
     $scope.isExerciseButtonVisible = function(move){
         return ($scope.excersiseVisible+move>=0)&&($scope.excersiseVisible+move<$scope.getOpt('numberOfExercises'));
     }
 
+    /**
+     * Is close exercise button visible action.
+     */
     $scope.isExerciseCloseBtnVisible = function(){
         return ($scope.excersiseVisible==$scope.getOpt('numberOfExercises')-1);
     }
 
+    /**
+     * This will gen next, random exercise and will shuffle at the end.
+     * @returns string
+     */
     $scope.getNextExercise = function(){
         $scope.excersiseIdx++;
         if ($scope.excersiseIdx>=$scope.excersises.length){
@@ -121,7 +152,9 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         return $scope.excersises[$scope.excersiseIdx];
     }
 
-
+    /**
+     * Show exercises action.
+     */
     $scope.showExercises = function(){
         $scope.nextModeAct('break');
 
@@ -138,12 +171,21 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         $scope.showNote('exercises', 'break');
     }
 
+    /**
+     * Select dialog box to show action.
+     * @param noteId Id of dialog.
+     * @param currMode Mode to select. Defaults to 'pause'.
+     */
     $scope.showNote = function(noteId, currMode){
         currMode = currMode || 'pause';
         $scope.visibleNote = noteId;
         $scope.currMode = currMode;
     }
 
+    /**
+     * Select next mode action.
+     * @param modeToGoTo Mode to select. Defaults to 'pause'.
+     */
     $scope.nextModeAct = function(modeToGoTo){
         $scope.closeNote(modeToGoTo);
 
@@ -152,15 +194,28 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         $scope.RebuildCircle();
     }
 
+    /**
+     * Close dialog and go to normal flow action.
+     * @param modeToGoTo Mode to select.
+     */
     $scope.closeNote = function(modeToGoTo){
         $scope.visibleNote = '';
         $scope.currMode = modeToGoTo;
     }
 
+    /**
+     * Is dialog visible action.
+     * @param noteId Id of dialog.
+     */
     $scope.isNoteVisible = function(noteId){
         return noteId==$scope.visibleNote;
     }
 
+    /**
+     * Get option value
+     * @param id Option id.
+     * @returns mixed Value
+     */
     $scope.getOpt = function(id){
         var _el = undefined;
         $.each($scope.options, function(){
@@ -170,12 +225,18 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         return _el;
     }
 
+    /**
+     * Save all options.
+     */
     $scope.saveOpts = function(){
         $.each($scope.options, function(){
             $cookies['opt_'+this.id] = this.val;
         });
     }
 
+    /**
+     * Load all options.
+     */
     $scope.loadOpts = function(){
         $.each($scope.options, function(idx){
             var _val = $cookies['opt_'+this.id];
@@ -225,6 +286,10 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         return {'minutes':minutes, 'seconds':seconds};
     }
 
+    /**
+     * Get max time for current mode.
+     * @returns {number}
+     */
     $scope.getTimeMax = function(){
         switch($scope.currMode){
             case 'work':
@@ -236,6 +301,9 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         }
     }
 
+    /**
+     * Rebuild circle.
+     */
     $scope.RebuildCircle = function(){
         if (!$('#timerDiv').is(':visible')){ //We need this as Angular won`t finish showing up before call to this after new mode is selected
             $interval($scope.RebuildCircle, 100, 1);
@@ -272,6 +340,10 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         });
     }
 
+    /**
+     * Force window actiovation (when possible) after 1m.
+     * @param message Message to show in alert (see notes).
+     */
     $scope.ActivateWindow = function(message){
         //<http://stackoverflow.com/questions/28517901/how-activate-a-browser-tab-which-is-inactive>
         //<http://stackoverflow.com/questions/2704206/how-to-change-browser-focus-from-one-tab-to-another>
@@ -286,6 +358,9 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         }.bind({'msg':message, 'mode':$scope.currMode}), 60000, 1);
     }
 
+    /**
+     * Refresh circle, time etc - interval callback.
+     */
     $scope.RefreshTimer = function(){
         if ($scope.currMode == 'pause') return;
 
@@ -333,6 +408,9 @@ timeForABreakApp.controller('timeForABreakCtrl', function ($scope, $interval, $c
         $scope.timeLeft_to_break_or_work=_break_or_work;
     }
 
+    /**
+     * Shows initial notes if first note.
+     */
     $scope.showFirstTimer = function(){
         if (typeof $cookies.tfab_visited == 'undefined'){
             $cookies.tfab_visited = true;
